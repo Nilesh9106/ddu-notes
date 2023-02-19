@@ -1,6 +1,6 @@
 env/
+media/
 *.sqlite3
 .vscode
 __pycache__/
 *.py[cod]
-media/
