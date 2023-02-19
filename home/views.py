@@ -5,18 +5,18 @@ from home.forms import *
 from django.contrib import messages
 from django.db.models import Q
 # Create your views here.
+from .filters import NoteFilter
+from verify_email.email_handler import send_verification_email
 
 def homeView(request):
-    if request.GET.get('searchfield') is not None:
-        search = request.GET.get('searchfield')
-        result1=Note.objects.filter(title__icontains=search,visibility='3')
-        result2=Note.objects.filter(subject__icontains=search,visibility='3')
-        result3=Note.objects.filter(description__icontains=search,visibility='3')
-        notes = result1.union(result2).union(result3)
-    else:
-        notes = Note.objects.filter(visibility = '3')
+    if(request.user.is_authenticated == False):
+        return redirect('login')
+    notes = Note.objects.all()
+    myFilter = NoteFilter(request.GET, queryset=notes)
+    notes = myFilter.qs
     
-    return render(request,'home/home.html',{'notes':notes})
+    
+    return render(request,'home/home.html',{'notes':notes,'myfilter':myFilter})
 
 def loginView(request):
     if request.user.is_authenticated == True :
@@ -47,21 +47,13 @@ def signupView(request):
             if User.objects.filter(email=email).exists():
                 messages.error(request,'This email is In Already use try Another !!')    
                 return redirect('signup')
-            user=form.save()
-            
-            
-            
             domain = email[(email.index('@')+1):]
-            print(domain)
-            if College.objects.filter(domain=domain).exists():
-                college=College.objects.filter(domain=domain).first()
-                profile=UserProfile(user=user,college=college)
+            if domain == 'ddu.ac.in':
+                inactive_user = send_verification_email(request, form)
+                messages.success(request,'Check Your Email for Verification')
+                return redirect('signup')
             else:
-                profile=UserProfile(user=user)
-            
-            profile.save()
-
-            return redirect('login')
+                messages.error(request,'Please Enter DDU email id ')
         
     form=Signup()
     
@@ -80,14 +72,8 @@ def uploadView(request):
     if request.method == 'POST':
         form=UploadForm(request.POST,request.FILES)
         if form.is_valid():
-            
             note=form.save(commit=False)
-            profile = UserProfile.objects.filter(user=request.user).first()
-            if profile.college == None:
-                messages.error(request,'please add your college email id in profile section!!')
-                return redirect('home')
-            
-            note.user = profile
+            note.user = request.user
             note.save()
             return redirect('/'+request.user.username)
     else:
@@ -99,61 +85,36 @@ def profileView(request):
     if(request.user.is_authenticated == False):
         return redirect('login')
     
-    profile = UserProfile.objects.filter(user=request.user).first()
-    notes = Note.objects.filter(user=profile).count()
+    
+    notes = Note.objects.filter(user=request.user).count()
     if request.method == 'POST':
         form = UserForm(request.POST,instance=request.user)
         if form.is_valid():
             form.save()
             return redirect('profile')
     form = UserForm(instance=request.user)
-    form2 = ProfilePicForm(instance=profile)
-    return render(request,'home/profile.html',{'profile':profile,'count':notes,'form':form,'form2':form2})
+    return render(request,'home/profile.html',{'count':notes,'form':form})
 
 
 def userNoteView(request,user):
     if User.objects.filter(username=user).exists():
         user= User.objects.filter(username=user).first()
-        profile = UserProfile.objects.filter(user=user).first()
-        if request.user.is_authenticated and request.user.username == user.username :
-            notes = Note.objects.filter(user=profile)
-        else:
-            notes = Note.objects.filter(user=profile,visibility='3')
+        notes = Note.objects.filter(user=user)
         return render(request,'notes/userNotes.html',{'notes':notes})
     else:
         return redirect('home')
 
-def changePicView(request):
-    if request.method == 'POST':
-        profile = UserProfile.objects.filter(user=request.user).first()
-        form = ProfilePicForm(request.POST,request.FILES,instance=profile)
-        if form.is_valid():
-            form.save()
-            return redirect('profile')
-    return redirect('home')
+    
 
 
 
-def collegeView(request):
+def deleteNoteView(request,id):
+    user = request.user
     if(request.user.is_authenticated == False):
         return redirect('login')
-    
-    user = request.user
-    profile= UserProfile.objects.filter(user=user).first()
-    college = profile.college
-    notes = []
-    for user in UserProfile.objects.filter(college=college):
-        note = Note.objects.filter(user=user,visibility='2' )
-        notes = notes + list(note)
-    return render(request,'notes/collegeNotes.html',{'notes':notes,'college':college})
-    
+    if Note.objects.filter(id=id,user=user).exists():
+        note = Note.objects.filter(id=id,user=user).first()
+        
+        note.delete()
+    return redirect('userNote',user)
 
-def searchView(request):
-    search = request.GET.get('searchfield')
-    result1=Note.objects.filter(title__icontains=search,visibility='3')
-    result2=Note.objects.filter(subject__icontains=search,visibility='3')
-    result3=Note.objects.filter(description__icontains=search,visibility='3')
-
-    result = result1.union(result2).union(result3)
-    
-    return render(request,'notes/searchResult.html',{'notes':result})

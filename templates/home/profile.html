@@ -8,13 +8,9 @@
       <div class="profile-card-4">
         <div class="card">
           <div class="card-body text-center rounded-top">
-            <div class="user-box "><img class="img-fluid" src="/media/{{profile.profilePic}}" alt="user avatar"></div>
+            
             <div class="row text-center mt-4">
-                <form action="{% url 'changePic' %}" method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    {{form2|crispy}}
-                    <input type="submit" value="Change" class='btn btn-dark w-100 my-3'>
-                </form>
+                
               <div class="col p-2 py-4">
                 <h4 class="mb-1 line-height-5">{{ count }}</h4>
                 <small class="mb-0 font-weight-bold">Notes Uploaded</small>

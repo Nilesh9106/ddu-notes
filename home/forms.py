@@ -10,12 +10,17 @@ class Signup(UserCreationForm):
     class Meta:
         model=User
         fields= ['username', 'first_name','last_name','email', 'password1', 'password2']
+        widgets={
+            'email':forms.EmailInput(attrs={
+                'required':True
+            })
+        }
 
 class UploadForm(forms.ModelForm):
 
     class Meta:
         model=Note
-        fields=['subject','visibility','title','description','document']
+        fields=['subject','semester','department','title','document']
 
 class UserForm(forms.ModelForm):
     class Meta:
@@ -23,9 +28,5 @@ class UserForm(forms.ModelForm):
         fields=['first_name','last_name','email']
 
 
-class ProfilePicForm(forms.ModelForm):
 
-    class Meta:
-        model=UserProfile
-        fields=['profilePic']
         

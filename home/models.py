@@ -1,42 +1,43 @@
 from django.db import models
 from django.contrib.auth.models import User
 # Create your models here.
-
-class College(models.Model):
-    domain = models.CharField(max_length=255,unique=True)
-    name = models.CharField(max_length=255)
-    logo = models.ImageField(upload_to='logo/')
-    def __str__(self):
-        return self.name
+import os
 
 
 
-NOTE_VISIBILITY_CHOICES = [
-        ('1', 'Private'),
-        ('2', 'College'),
-        ('3', 'Public'),
+SEMESTER=[
+    ('1','semester 1'),
+    ('2','semester 2'),
+    ('3','semester 3'),
+    ('4','semester 4'),
+    ('5','semester 5'),
+    ('6','semester 6'),
+    ('7','semester 7'),
+    ('8','semester 8'),
 ]
-class UserProfile(models.Model):
-    user = models.ForeignKey(User,on_delete=models.CASCADE)
-    college = models.ForeignKey(College,on_delete=models.SET_NULL,null=True)
-    profilePic =models.ImageField(upload_to='profile/',default='/profile/default1.png')
 
-    def __str__(self):
-        return self.user.username
+
+DEPARTMENT=[
+    ('CE','Computer engineering'),
+    ('MH','Mechanical engineering'),
+    ('EC','Electrical engineering'),
+    ('CH','Chemical engineering'),
+]
+
 class Note(models.Model):
-    user = models.ForeignKey(UserProfile,on_delete=models.CASCADE)
+    user = models.ForeignKey(User,on_delete=models.CASCADE)
     subject = models.CharField(max_length=255)
-    visibility = models.CharField(max_length=1,choices=NOTE_VISIBILITY_CHOICES,default='3')
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    semester = models.CharField(max_length=1,choices=SEMESTER)
+    department = models.CharField(max_length=4,choices=DEPARTMENT)
     document = models.FileField(upload_to='files/')
-
     def __str__(self):
         return self.title
     
-
-
-
+    def delete(self,*args,**kwargs):
+        if os.path.isfile('media/'+self.document.name):
+            os.remove('media/'+self.document.name)
+        super(Note, self).delete(*args,**kwargs)
 
 
 
